@@ -52,11 +52,11 @@ export class AuthService {
     this.currentUser.set(data.user);
   }
 
-  async register(email: string, password: string, name: string): Promise<void> {
+  async register(email: string, password: string, name: string, companyName?: string): Promise<void> {
     const res = await fetch(`${environment.apiUrl}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, name, companyName: companyName?.trim() || undefined }),
     });
 
     if (!res.ok) {

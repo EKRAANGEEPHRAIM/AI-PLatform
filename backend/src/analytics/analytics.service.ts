@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../prisma/prisma.service';
+import { visibleConversations } from '../conversations/conversation-scope.js';
 
 
 @Injectable()
@@ -7,13 +8,14 @@ export class AnalyticsService {
   constructor(private readonly prisma : DatabaseService) {}
 
   async getDashboardStats(userId: string) {
+    const scope = await visibleConversations(this.prisma, userId);
     const [totalConversations, activeConversations, resolvedConversations, totalMessages] =
       await Promise.all([
-        this.prisma.conversation.count({ where: { userId } }),
-        this.prisma.conversation.count({ where: { userId, status: 'ACTIVE' } }),
-        this.prisma.conversation.count({ where: { userId, status: 'RESOLVED' } }),
+        this.prisma.conversation.count({ where: scope }),
+        this.prisma.conversation.count({ where: { AND: [scope, { status: 'ACTIVE' }] } }),
+        this.prisma.conversation.count({ where: { AND: [scope, { status: 'RESOLVED' }] } }),
         this.prisma.message.count({
-          where: { conversation: { userId } },
+          where: { conversation: scope },
         }),
       ]);
 
@@ -33,8 +35,9 @@ export class AnalyticsService {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
+    const scope = await visibleConversations(this.prisma, userId);
     const conversations = await this.prisma.conversation.findMany({
-      where: { userId, createdAt: { gte: since } },
+      where: { AND: [scope, { createdAt: { gte: since } }] },
       select: { createdAt: true },
       orderBy: { createdAt: 'asc' },
     });
@@ -52,8 +55,9 @@ export class AnalyticsService {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
+    const scope = await visibleConversations(this.prisma, userId);
     const messages = await this.prisma.message.findMany({
-      where: { conversation: { userId }, createdAt: { gte: since } },
+      where: { conversation: scope, createdAt: { gte: since } },
       select: { createdAt: true, role: true },
       orderBy: { createdAt: 'asc' },
     });
@@ -71,7 +75,7 @@ export class AnalyticsService {
 
   async getRecentConversations(userId: string, limit = 5) {
     return this.prisma.conversation.findMany({
-      where: { userId },
+      where: await visibleConversations(this.prisma, userId),
       include: {
         _count: { select: { messages: true } },
         messages: { orderBy: { createdAt: 'desc' }, take: 1 },

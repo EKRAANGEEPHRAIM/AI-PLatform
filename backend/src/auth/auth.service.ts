@@ -3,12 +3,14 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import type { RegisterDto, LoginDto } from './dto/auth.dto.js';
 import { DatabaseService } from '../prisma/prisma.service';
+import { TenantService } from '../tenant/tenant.service.js';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: DatabaseService,
     private readonly jwtService: JwtService,
+    private readonly tenants: TenantService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -19,11 +21,15 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
+    // Chaque compte crée son entreprise : sa base de connaissances et son widget
+    const tenant = await this.tenants.createForName(dto.companyName ?? `Entreprise de ${dto.name}`);
+
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         password: hashedPassword,
         name: dto.name,
+        tenantId: tenant.id,
       },
     });
 

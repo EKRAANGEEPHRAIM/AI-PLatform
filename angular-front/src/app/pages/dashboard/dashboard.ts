@@ -11,8 +11,8 @@ import { AuthService } from '../../core/services/auth.service';
     <div class="p-8">
       <!-- Header -->
       <div class="mb-8">
-        <h1 class="text-3xl font-bold text-white">Dashboard</h1>
-        <p class="text-slate-400 mt-1">Welcome back, {{ authService.currentUser()?.name }}</p>
+        <h1 class="text-3xl font-bold text-white">Tableau de bord</h1>
+        <p class="text-slate-400 mt-1">Bonjour {{ authService.currentUser()?.name }}</p>
       </div>
 
       <!-- Stats Grid -->
@@ -28,7 +28,7 @@ import { AuthService } from '../../core/services/auth.service';
               </div>
               <div>
                 <p class="text-2xl font-bold text-white">{{ stats()!.totalConversations }}</p>
-                <p class="text-slate-400 text-sm">Total Conversations</p>
+                <p class="text-slate-400 text-sm">Conversations</p>
               </div>
             </div>
           </div>
@@ -43,7 +43,7 @@ import { AuthService } from '../../core/services/auth.service';
               </div>
               <div>
                 <p class="text-2xl font-bold text-white">{{ stats()!.activeConversations }}</p>
-                <p class="text-slate-400 text-sm">Active</p>
+                <p class="text-slate-400 text-sm">Actives</p>
               </div>
             </div>
           </div>
@@ -58,7 +58,7 @@ import { AuthService } from '../../core/services/auth.service';
               </div>
               <div>
                 <p class="text-2xl font-bold text-white">{{ stats()!.resolvedConversations }}</p>
-                <p class="text-slate-400 text-sm">Resolved</p>
+                <p class="text-slate-400 text-sm">Résolues</p>
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@ import { AuthService } from '../../core/services/auth.service';
               </div>
               <div>
                 <p class="text-2xl font-bold text-white">{{ stats()!.totalMessages }}</p>
-                <p class="text-slate-400 text-sm">Total Messages</p>
+                <p class="text-slate-400 text-sm">Messages échangés</p>
               </div>
             </div>
           </div>
@@ -83,7 +83,7 @@ import { AuthService } from '../../core/services/auth.service';
         <div class="p-6 rounded-2xl bg-gradient-to-r from-indigo-500/10 to-violet-500/10 border border-indigo-500/20">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-slate-400 text-sm">Average Messages per Conversation</p>
+              <p class="text-slate-400 text-sm">Messages par conversation, en moyenne</p>
               <p class="text-4xl font-bold text-white mt-2">{{ stats()!.avgMessagesPerConversation }}</p>
             </div>
             <div class="w-16 h-16 rounded-2xl bg-indigo-500/20 flex items-center justify-center">
@@ -95,7 +95,7 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
       } @else {
         <div class="flex items-center justify-center h-64">
-          <div class="animate-pulse text-slate-400">Loading analytics...</div>
+          <div class="animate-pulse text-slate-400">Chargement des statistiques…</div>
         </div>
       }
     </div>

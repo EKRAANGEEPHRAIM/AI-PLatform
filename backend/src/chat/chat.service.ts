@@ -1,13 +1,16 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { DeepSeekService } from './deepseek.service.js';
+import { Injectable, NotFoundException, ForbiddenException, ServiceUnavailableException } from '@nestjs/common';
 import type { SendMessageDto } from './dto/chat.dto.js';
 import { DatabaseService } from '../prisma/prisma.service';
+import { AssistantService } from '../assistant/assistant.service.js';
+import { TenantService } from '../tenant/tenant.service.js';
 
+/** Chat interne : l'équipe teste l'assistant de son entreprise avant de l'installer sur son site */
 @Injectable()
 export class ChatService {
   constructor(
     private readonly prisma: DatabaseService,
-    private readonly deepseek: DeepSeekService,
+    private readonly assistant: AssistantService,
+    private readonly tenants: TenantService,
   ) {}
 
   async sendMessage(userId: string, dto: SendMessageDto) {
@@ -21,6 +24,11 @@ export class ChatService {
     if (conversation.userId !== userId) {
       throw new ForbiddenException('Access denied');
     }
+    // Vérifié avant d'enregistrer le message, pour ne pas laisser de question sans réponse
+    if (!this.assistant.isConfigured) {
+      throw new ServiceUnavailableException("L'assistant n'est pas configuré sur ce serveur (AI_API_KEY manquante).");
+    }
+    const tenant = await this.tenants.forUser(userId);
 
     // Save user message
     const userMessage = await this.prisma.message.create({
@@ -31,20 +39,20 @@ export class ChatService {
       },
     });
 
-    // Fetch conversation history for context
+    // Les 20 derniers messages (et non les 20 premiers) pour garder le fil
     const history = await this.prisma.message.findMany({
       where: { conversationId: dto.conversationId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
       take: 20,
     });
 
-    const chatMessages = history.map((msg) => ({
-      role: msg.role.toLowerCase() as 'user' | 'assistant' | 'system',
+    const chatMessages = history.reverse().map((msg) => ({
+      role: msg.role === 'ASSISTANT' ? ('assistant' as const) : ('user' as const),
       content: msg.content,
     }));
 
-    // Call DeepSeek AI
-    const aiResponse = await this.deepseek.chat(chatMessages);
+    // Même assistant que sur le widget : il répond avec la base de connaissances de l'entreprise
+    const aiResponse = await this.assistant.reply(tenant, chatMessages);
 
     // Save AI response
     const assistantMessage = await this.prisma.message.create({
@@ -72,7 +80,11 @@ export class ChatService {
     if (!conversation) {
       throw new NotFoundException('Conversation not found');
     }
-    if (conversation.userId !== userId) {
+    // Lecture : ses propres tests, ou les conversations des visiteurs du widget de son entreprise
+    const isOwnTest = conversation.userId === userId;
+    const isOwnWidget =
+      conversation.channel === 'WIDGET' && conversation.tenantId === (await this.tenants.forUser(userId)).id;
+    if (!isOwnTest && !isOwnWidget) {
       throw new ForbiddenException('Access denied');
     }
 

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { DatabaseService } from '../prisma/prisma.service';
 import type { CreateConversationDto, UpdateConversationDto } from './dto/conversation.dto.js';
+import { visibleConversations } from './conversation-scope.js';
 
 @Injectable()
 export class ConversationsService {
@@ -18,7 +19,7 @@ export class ConversationsService {
 
   async findAll(userId: string) {
     return this.prisma.conversation.findMany({
-      where: { userId },
+      where: await visibleConversations(this.prisma, userId),
       include: {
         messages: {
           orderBy: { createdAt: 'desc' },
@@ -41,9 +42,7 @@ export class ConversationsService {
     if (!conversation) {
       throw new NotFoundException('Conversation not found');
     }
-    if (conversation.userId !== userId) {
-      throw new ForbiddenException('Access denied');
-    }
+    await this.assertAccess(userId, conversation);
 
     return conversation;
   }
@@ -56,9 +55,7 @@ export class ConversationsService {
     if (!conversation) {
       throw new NotFoundException('Conversation not found');
     }
-    if (conversation.userId !== userId) {
-      throw new ForbiddenException('Access denied');
-    }
+    await this.assertAccess(userId, conversation);
 
     return this.prisma.conversation.update({
       where: { id: conversationId },
@@ -75,11 +72,17 @@ export class ConversationsService {
     if (!conversation) {
       throw new NotFoundException('Conversation not found');
     }
-    if (conversation.userId !== userId) {
-      throw new ForbiddenException('Access denied');
-    }
+    await this.assertAccess(userId, conversation);
 
     await this.prisma.conversation.delete({ where: { id: conversationId } });
     return { deleted: true };
+  }
+
+  /** Ses propres conversations, ou celles des visiteurs du widget de son entreprise */
+  private async assertAccess(userId: string, conversation: { userId: string | null; tenantId: string | null; channel: string }) {
+    if (conversation.userId === userId) return;
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { tenantId: true } });
+    if (conversation.channel === 'WIDGET' && user?.tenantId && conversation.tenantId === user.tenantId) return;
+    throw new ForbiddenException('Access denied');
   }
 }

@@ -2,6 +2,37 @@
 
 @import 'tailwindcss';
 
+/*
+ * Identité Akwaba : teal (confiance, service) + orange (chaleur de l'accueil).
+ * Les écrans utilisent les classes indigo-* de Tailwind et les jetons --brand-* :
+ * on redéfinit les deux ici pour rhabiller l'application sans toucher aux templates.
+ */
+@theme {
+  --font-display: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-indigo-50: #effcf9;
+  --color-indigo-100: #c9f7ed;
+  --color-indigo-200: #95eddc;
+  --color-indigo-300: #5adcc6;
+  --color-indigo-400: #2cc2ad;
+  --color-indigo-500: #14a693;
+  --color-indigo-600: #0e8577;
+  --color-indigo-700: #0f6a61;
+  --color-indigo-800: #11554f;
+  --color-indigo-900: #134742;
+  --color-indigo-950: #042a28;
+
+  /* violet-* → orange de l'accueil */
+  --color-violet-400: #fb923c;
+  --color-violet-500: #f97316;
+  --color-violet-600: #ea580c;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+}
+
 /* ─── Design System Tokens ─── */
 
 /* Dark theme (default) */
@@ -19,7 +50,7 @@ html.dark {
   /* Borders */
   --border-primary: rgba(255, 255, 255, 0.06);
   --border-secondary: rgba(255, 255, 255, 0.1);
-  --border-focus: #6366f1;
+  --border-focus: #14a693;
 
   /* Text hierarchy */
   --text-primary: #f1f5f9;
@@ -28,10 +59,10 @@ html.dark {
   --text-inverse: #0f172a;
 
   /* Brand palette */
-  --brand-primary: #6366f1;
-  --brand-primary-hover: #818cf8;
-  --brand-primary-muted: rgba(99, 102, 241, 0.15);
-  --brand-primary-border: rgba(99, 102, 241, 0.25);
+  --brand-primary: #14a693;
+  --brand-primary-hover: #2cc2ad;
+  --brand-primary-muted: rgba(20, 166, 147, 0.15);
+  --brand-primary-border: rgba(20, 166, 147, 0.3);
 
   /* Semantic colors */
   --success: #10b981;
@@ -40,8 +71,8 @@ html.dark {
   --warning-muted: rgba(245, 158, 11, 0.15);
   --error: #ef4444;
   --error-muted: rgba(239, 68, 68, 0.15);
-  --info: #6366f1;
-  --info-muted: rgba(99, 102, 241, 0.15);
+  --info: #14a693;
+  --info-muted: rgba(20, 166, 147, 0.15);
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -66,17 +97,17 @@ html.light {
 
   --border-primary: rgba(0, 0, 0, 0.06);
   --border-secondary: rgba(0, 0, 0, 0.1);
-  --border-focus: #6366f1;
+  --border-focus: #14a693;
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-tertiary: #94a3b8;
   --text-inverse: #f8fafc;
 
-  --brand-primary: #4f46e5;
-  --brand-primary-hover: #6366f1;
-  --brand-primary-muted: rgba(79, 70, 229, 0.08);
-  --brand-primary-border: rgba(79, 70, 229, 0.2);
+  --brand-primary: #0e8577;
+  --brand-primary-hover: #14a693;
+  --brand-primary-muted: rgba(14, 133, 119, 0.08);
+  --brand-primary-border: rgba(14, 133, 119, 0.2);
 
   --success: #059669;
   --success-muted: rgba(5, 150, 105, 0.08);
@@ -84,8 +115,8 @@ html.light {
   --warning-muted: rgba(217, 119, 6, 0.08);
   --error: #dc2626;
   --error-muted: rgba(220, 38, 38, 0.08);
-  --info: #4f46e5;
-  --info-muted: rgba(79, 70, 229, 0.08);
+  --info: #0e8577;
+  --info-muted: rgba(14, 133, 119, 0.08);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);

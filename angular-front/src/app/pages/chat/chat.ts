@@ -1,4 +1,5 @@
-import { Component, inject, signal, ChangeDetectionStrategy, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, computed, inject, input, signal, ChangeDetectionStrategy, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ConversationsService, type Conversation, type Message } from '../../core/services/conversations.service';
 import { ChatService } from '../../core/services/chat.service';
@@ -20,12 +21,12 @@ import { ChatService } from '../../core/services/chat.service';
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            New Conversation
+            Nouveau test
           </button>
         </div>
 
         <div class="flex-1 overflow-y-auto p-2 space-y-1">
-          @for (conv of conversations(); track conv.id) {
+          @for (conv of testConversations(); track conv.id) {
             <button
               (click)="selectConversation(conv)"
               [class]="conv.id === selectedConversation()?.id
@@ -39,7 +40,7 @@ import { ChatService } from '../../core/services/chat.service';
             </button>
           } @empty {
             <div class="p-4 text-center text-slate-500 text-sm">
-              No conversations yet. Create one to start chatting with AI.
+              Aucun test pour l'instant. Lancez-en un et posez une question comme le ferait un client.
             </div>
           }
         </div>
@@ -52,7 +53,7 @@ import { ChatService } from '../../core/services/chat.service';
           <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between">
             <div>
               <h2 class="text-white font-semibold">{{ selectedConversation()!.title }}</h2>
-              <p class="text-slate-500 text-xs">AI-powered customer support</p>
+              <p class="text-slate-500 text-xs">{{ isVisitorConversation() ? 'Conversation d’un visiteur du site · lecture seule' : 'Test de votre assistant, avec votre base de connaissances' }}</p>
             </div>
             <div class="flex items-center gap-2">
               <span
@@ -62,7 +63,7 @@ import { ChatService } from '../../core/services/chat.service';
                     ? 'px-2.5 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20'
                     : 'px-2.5 py-1 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20'"
               >
-                {{ selectedConversation()!.status }}
+                {{ statusLabel(selectedConversation()!.status) }}
               </span>
             </div>
           </div>
@@ -83,7 +84,7 @@ import { ChatService } from '../../core/services/chat.service';
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
                       </div>
-                      <span class="text-xs text-indigo-400 font-medium">AI Assistant</span>
+                      <span class="text-xs text-indigo-400 font-medium">Assistant</span>
                     </div>
                   }
                   <p class="text-sm whitespace-pre-wrap">{{ msg.content }}</p>
@@ -100,7 +101,7 @@ import { ChatService } from '../../core/services/chat.service';
                       <div class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style="animation-delay: 0.1s"></div>
                       <div class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style="animation-delay: 0.2s"></div>
                     </div>
-                    <span class="text-slate-400 text-sm">AI is thinking...</span>
+                    <span class="text-slate-400 text-sm">L'assistant rédige sa réponse…</span>
                   </div>
                 </div>
               </div>
@@ -108,6 +109,10 @@ import { ChatService } from '../../core/services/chat.service';
           </div>
 
           <!-- Input -->
+          @if (error()) {
+            <p class="mx-4 mb-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">{{ error() }}</p>
+          }
+          @if (!isVisitorConversation()) {
           <div class="p-4 border-t border-white/5">
             <form (ngSubmit)="sendMessage()" class="flex gap-3">
               <input
@@ -115,7 +120,7 @@ import { ChatService } from '../../core/services/chat.service';
                 [(ngModel)]="messageInput"
                 name="message"
                 class="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                placeholder="Type your message..."
+                placeholder="Posez une question comme un client…"
                 [disabled]="sending()"
               />
               <button
@@ -129,6 +134,7 @@ import { ChatService } from '../../core/services/chat.service';
               </button>
             </form>
           </div>
+          }
         } @else {
           <!-- Empty state -->
           <div class="flex-1 flex items-center justify-center">
@@ -138,8 +144,8 @@ import { ChatService } from '../../core/services/chat.service';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                 </svg>
               </div>
-              <h3 class="text-white font-semibold text-lg">Select a conversation</h3>
-              <p class="text-slate-400 mt-1">Choose a conversation or create a new one to start chatting</p>
+              <h3 class="text-white font-semibold text-lg">Testez votre assistant</h3>
+              <p class="text-slate-400 mt-1">Lancez un test et posez les questions de vos clients : livraison, prix, horaires…</p>
             </div>
           </div>
         }
@@ -158,7 +164,19 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   messages = signal<Message[]>([]);
   messageInput = '';
   sending = signal(false);
+  error = signal('');
   private shouldScrollToBottom = false;
+
+  /** ?id=… : conversation ouverte depuis la page Conversations */
+  readonly id = input<string>();
+
+  /** La barre latérale ne liste que les tests de l'équipe */
+  readonly testConversations = computed(() => this.conversations().filter((c) => c.channel !== 'WIDGET'));
+  readonly isVisitorConversation = computed(() => this.selectedConversation()?.channel === 'WIDGET');
+
+  statusLabel(status: Conversation['status']): string {
+    return { ACTIVE: 'Active', RESOLVED: 'Résolue', ARCHIVED: 'Archivée' }[status];
+  }
 
   ngOnInit() {
     this.loadConversations();
@@ -173,11 +191,16 @@ export class ChatComponent implements OnInit, AfterViewChecked {
 
   private loadConversations() {
     this.conversationsService.getAll().subscribe({
-      next: (data) => this.conversations.set(data),
+      next: (data) => {
+        this.conversations.set(data);
+        const requested = data.find((c) => c.id === this.id());
+        if (requested) this.selectConversation(requested);
+      },
     });
   }
 
   selectConversation(conv: Conversation) {
+    this.error.set('');
     this.selectedConversation.set(conv);
     this.chatService.getMessages(conv.id).subscribe({
       next: (msgs) => {
@@ -188,7 +211,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   }
 
   createConversation() {
-    const title = `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    const title = `Test du ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
     this.conversationsService.create(title).subscribe({
       next: (conv) => {
         this.conversations.update((list) => [conv, ...list]);
@@ -202,6 +225,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
     if (!content || !this.selectedConversation()) return;
 
     this.messageInput = '';
+    this.error.set('');
     this.sending.set(true);
 
     this.chatService.sendMessage(this.selectedConversation()!.id, content).subscribe({
@@ -210,8 +234,9 @@ export class ChatComponent implements OnInit, AfterViewChecked {
         this.sending.set(false);
         this.shouldScrollToBottom = true;
       },
-      error: () => {
+      error: (err: HttpErrorResponse) => {
         this.sending.set(false);
+        this.error.set(typeof err.error?.message === 'string' ? err.error.message : 'L’assistant n’a pas pu répondre.');
       },
     });
   }

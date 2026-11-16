@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, Query, UseGuards, Request } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 
@@ -27,8 +27,10 @@ export class AnalyticsController {
     return this.analyticsService.getRecentConversations(req.user.id, limit ? parseInt(limit) : 5);
   }
 
+  /** Totaux de toute la plateforme (toutes entreprises) : réservé aux administrateurs */
   @Get('global')
-  async getGlobalStats() {
+  async getGlobalStats(@Request() req: any) {
+    if (req.user.role !== 'ADMIN') throw new ForbiddenException('Admin only');
     return this.analyticsService.getGlobalStats();
   }
 }

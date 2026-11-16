@@ -18,16 +18,19 @@ async function bootstrap() {
   // Security headers allows us to set security headers
   app.use(helmet());
   // Set global prefix for all routes
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api/v1');
 
+  // Le site (et son widget, servi par le même site) est le seul appelant autorisé
   app.enableCors({
-    origin: ['http://localhost:4200'],
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:4200',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
     maxAge: 600,
   });
   await app.listen(process.env.PORT ?? 3000);
+
+  console.log(`Server running on port ${process.env.PORT ?? 3000}`);
 }
 bootstrap().catch((err) => {
   console.error('Failed to start application:', err);

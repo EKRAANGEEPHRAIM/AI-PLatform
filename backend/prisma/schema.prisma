@@ -1,11 +1,9 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Akwaba : assistant de service client pour PME.
+// Une entreprise (Tenant) = une base de connaissances + un widget de chat pour son site.
 
 generator client {
-  provider = "prisma-client"
- 
+  // Client généré dans node_modules/@prisma/client, importé tel quel par le code
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -19,6 +17,15 @@ model Tenant {
   plan      Plan     @default(FREE)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  /// Informations de l'entreprise sur lesquelles l'assistant s'appuie (FAQ, prix, horaires…)
+  knowledgeBase  String @default("")
+  /// Comment joindre un humain quand l'assistant ne sait pas répondre
+  contactInfo    String @default("")
+  welcomeMessage String @default("Bonjour ! Comment puis-je vous aider ?")
+  brandColor     String @default("#0f766e")
+  /// Identifiant public du widget, inséré dans le site de l'entreprise
+  widgetKey      String @unique @default(cuid())
 
   users         User[]
   conversations Conversation[]
@@ -46,16 +53,21 @@ model Conversation {
   id        String             @id @default(cuid())
   title     String
   status    ConversationStatus @default(ACTIVE)
+  /// INTERNAL : test par l'équipe ; WIDGET : visiteur du site de l'entreprise
+  channel   Channel            @default(INTERNAL)
+  /// Identifiant anonyme du visiteur (navigateur), pour les conversations du widget
+  visitorId String?
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
 
-  userId   String
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String?
+  user     User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tenantId String?
   tenant   Tenant?   @relation(fields: [tenantId], references: [id], onDelete: SetNull)
   messages Message[]
 
   @@index([tenantId])
+  @@index([tenantId, visitorId])
   @@map("conversations")
 }
 
@@ -80,6 +92,11 @@ enum ConversationStatus {
   ACTIVE
   ARCHIVED
   RESOLVED
+}
+
+enum Channel {
+  INTERNAL
+  WIDGET
 }
 
 enum MessageRole {

@@ -1,0 +1,25 @@
+# API NestJS d'Akwaba sur Render (plan gratuit). Les valeurs "sync: false" se saisissent
+# dans le tableau de bord Render, jamais dans ce fichier.
+services:
+  - type: web
+    name: akwaba-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AI_MODEL
+        value: llama-3.3-70b-versatile
+      - key: WIDGET_DAILY_LIMIT
+        value: "200"
+      - key: DATABASE_URL
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false

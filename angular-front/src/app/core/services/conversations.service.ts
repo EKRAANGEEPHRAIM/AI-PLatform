@@ -14,9 +14,11 @@ export interface Conversation {
   id: string;
   title: string;
   status: 'ACTIVE' | 'ARCHIVED' | 'RESOLVED';
+  /** INTERNAL : test par l'équipe ; WIDGET : visiteur du site */
+  channel: 'INTERNAL' | 'WIDGET';
   createdAt: string;
   updatedAt: string;
-  userId: string;
+  userId: string | null;
   messages: Message[];
   _count?: { messages: number };
 }
