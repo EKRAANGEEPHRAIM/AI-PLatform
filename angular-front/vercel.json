@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/angular-front/browser",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://akwaba-api.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://akwaba-api-hf7d.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

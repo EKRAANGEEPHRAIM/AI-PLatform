@@ -61,7 +61,7 @@ Les migrations s'appliquent à chaque déploiement. Pour charger la démo une fo
 la même `DATABASE_URL`.
 
 **Site sur Vercel** : importer le dépôt avec `angular-front` comme *Root Directory*. `vercel.json` renvoie
-`/api/*` vers `https://akwaba-api.onrender.com`, à adapter si le service Render porte un autre nom. Le site et le
+`/api/*` vers l'API Render (`https://akwaba-api-hf7d.onrender.com`), à adapter si Render donne une autre adresse. Le site et le
 widget sont donc servis depuis le même domaine.
 
 ## Architecture
