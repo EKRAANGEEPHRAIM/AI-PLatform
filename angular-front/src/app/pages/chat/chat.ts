@@ -1,152 +1,117 @@
 import { Component, computed, inject, input, signal, ChangeDetectionStrategy, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { ConversationsService, type Conversation, type Message } from '../../core/services/conversations.service';
 import { ChatService } from '../../core/services/chat.service';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block h-full' },
   template: `
     <div class="flex h-full">
-      <!-- Conversations sidebar -->
-      <div class="w-80 border-r border-white/5 flex flex-col bg-slate-800/30">
-        <div class="p-4 border-b border-white/5">
-          <button
-            (click)="createConversation()"
-            class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition flex items-center justify-center gap-2"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Nouveau test
-          </button>
+      <!-- Liste des tests (cachée sur téléphone quand une conversation est ouverte) -->
+      <div class="w-full flex-col border-r border-[var(--border-primary)] md:flex md:w-72"
+        [class.hidden]="!!selectedConversation()" [class.flex]="!selectedConversation()">
+        <div class="border-b border-[var(--border-primary)] p-4">
+          <h1 class="text-xl font-extrabold">Tester l'assistant</h1>
+          <p class="mt-1 text-sm leading-6 text-[var(--text-secondary)]">Posez-lui les questions de vos clients, avec votre cahier actuel.</p>
+          <button type="button" (click)="createConversation()" class="btn-primary mt-4 w-full py-2.5 text-sm">Nouveau test</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-2 space-y-1">
+        <div class="flex-1 space-y-0.5 overflow-y-auto p-2">
           @for (conv of testConversations(); track conv.id) {
-            <button
-              (click)="selectConversation(conv)"
-              [class]="conv.id === selectedConversation()?.id
-                ? 'w-full text-left px-4 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 transition'
-                : 'w-full text-left px-4 py-3 rounded-xl hover:bg-white/5 border border-transparent transition'"
-            >
-              <p class="text-white text-sm font-medium truncate">{{ conv.title }}</p>
-              <p class="text-slate-500 text-xs mt-1">
-                {{ conv._count?.messages || 0 }} messages
-              </p>
+            <button type="button" (click)="selectConversation(conv)"
+              class="w-full rounded-lg px-3 py-2.5 text-left transition"
+              [class]="conv.id === selectedConversation()?.id ? 'bg-[var(--brand-primary-muted)]' : 'hover:bg-[var(--surface-tertiary)]'">
+              <p class="truncate text-sm font-medium">{{ conv.title }}</p>
+              <p class="mt-0.5 text-xs text-[var(--text-tertiary)]">{{ conv._count?.messages || 0 }} messages</p>
             </button>
           } @empty {
-            <div class="p-4 text-center text-slate-500 text-sm">
-              Aucun test pour l'instant. Lancez-en un et posez une question comme le ferait un client.
-            </div>
+            <p class="p-4 text-sm leading-6 text-[var(--text-tertiary)]">
+              Aucun test pour l'instant. Lancez-en un, et écrivez comme un client pressé.
+            </p>
           }
         </div>
       </div>
 
-      <!-- Chat area -->
-      <div class="flex-1 flex flex-col">
-        @if (selectedConversation()) {
-          <!-- Chat header -->
-          <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-            <div>
-              <h2 class="text-white font-semibold">{{ selectedConversation()!.title }}</h2>
-              <p class="text-slate-500 text-xs">{{ isVisitorConversation() ? 'Conversation d’un visiteur du site · lecture seule' : 'Test de votre assistant, avec votre base de connaissances' }}</p>
+      <!-- Conversation -->
+      <div class="min-w-0 flex-1 flex-col md:flex" [class.hidden]="!selectedConversation()" [class.flex]="!!selectedConversation()">
+        @if (selectedConversation(); as conv) {
+          <div class="flex items-center gap-3 border-b border-[var(--border-primary)] px-4 py-3 sm:px-6">
+            <button type="button" (click)="selectedConversation.set(null)" class="-ml-1 rounded-md p-1.5 text-[var(--text-secondary)] md:hidden" aria-label="Retour à la liste">
+              <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+            </button>
+            <div class="min-w-0 flex-1">
+              <h2 class="truncate font-semibold">{{ conv.title }}</h2>
+              <p class="text-xs text-[var(--text-tertiary)]">
+                {{ isVisitorConversation() ? 'Conversation d’un visiteur du site · lecture seule' : 'Test avec votre cahier actuel' }}
+              </p>
             </div>
-            <div class="flex items-center gap-2">
-              <span
-                [class]="selectedConversation()!.status === 'ACTIVE'
-                  ? 'px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                  : selectedConversation()!.status === 'RESOLVED'
-                    ? 'px-2.5 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20'
-                    : 'px-2.5 py-1 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20'"
-              >
-                {{ statusLabel(selectedConversation()!.status) }}
-              </span>
-            </div>
+            @if (isVisitorConversation()) {
+              <a routerLink="/conversations" class="hidden shrink-0 text-sm font-semibold text-[var(--brand-primary)] hover:underline sm:block">Toutes les questions</a>
+            }
           </div>
 
-          <!-- Messages -->
-          <div class="flex-1 overflow-y-auto p-6 space-y-4" #messagesContainer>
+          <div class="flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-6" #messagesContainer>
             @for (msg of messages(); track msg.id) {
               <div [class]="msg.role === 'USER' ? 'flex justify-end' : 'flex justify-start'">
-                <div
-                  [class]="msg.role === 'USER'
-                    ? 'max-w-[70%] px-4 py-3 rounded-2xl rounded-br-md bg-indigo-600 text-white'
-                    : 'max-w-[70%] px-4 py-3 rounded-2xl rounded-bl-md bg-white/5 border border-white/10 text-slate-200'"
-                >
-                  @if (msg.role === 'ASSISTANT') {
-                    <div class="flex items-center gap-2 mb-1">
-                      <div class="w-5 h-5 rounded-full bg-indigo-500/30 flex items-center justify-center">
-                        <svg class="w-3 h-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
-                      </div>
-                      <span class="text-xs text-indigo-400 font-medium">Assistant</span>
-                    </div>
-                  }
-                  <p class="text-sm whitespace-pre-wrap">{{ msg.content }}</p>
+                <div class="max-w-[85%] sm:max-w-[70%]">
+                  <p class="mb-1 px-1 text-xs font-semibold"
+                    [class]="msg.role === 'USER' ? 'text-right text-[var(--text-tertiary)]' : 'text-[var(--brand-primary)]'">
+                    {{ msg.role === 'USER' ? (isVisitorConversation() ? 'Le client' : 'Vous, en client') : 'L’assistant' }}
+                    <span class="font-normal text-[var(--text-tertiary)]">· {{ time(msg.createdAt) }}</span>
+                  </p>
+                  <p class="whitespace-pre-wrap rounded-2xl px-4 py-3 text-[0.95rem] leading-relaxed"
+                    [class]="msg.role === 'USER'
+                      ? 'rounded-tr-sm bg-[var(--brand-primary)] text-[var(--brand-on)]'
+                      : 'rounded-tl-sm border border-[var(--border-primary)] bg-[var(--surface-secondary)]'">{{ msg.content }}</p>
                 </div>
               </div>
+            } @empty {
+              @if (!isVisitorConversation()) {
+                <div class="mx-auto max-w-sm pt-10 text-center text-[var(--text-secondary)]">
+                  <p class="hand">Essayez :</p>
+                  <div class="mt-3 flex flex-wrap justify-center gap-2">
+                    @for (q of suggestions; track q) {
+                      <button type="button" (click)="messageInput = q; sendMessage()"
+                        class="rounded-full border border-[var(--border-secondary)] px-3 py-1.5 text-sm hover:bg-[var(--brand-primary-muted)]">{{ q }}</button>
+                    }
+                  </div>
+                </div>
+              }
             }
 
             @if (sending()) {
               <div class="flex justify-start">
-                <div class="max-w-[70%] px-4 py-3 rounded-2xl rounded-bl-md bg-white/5 border border-white/10">
-                  <div class="flex items-center gap-2">
-                    <div class="flex gap-1">
-                      <div class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce"></div>
-                      <div class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style="animation-delay: 0.1s"></div>
-                      <div class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style="animation-delay: 0.2s"></div>
-                    </div>
-                    <span class="text-slate-400 text-sm">L'assistant rédige sa réponse…</span>
-                  </div>
-                </div>
+                <p class="typing rounded-2xl rounded-tl-sm border border-[var(--border-primary)] bg-[var(--surface-secondary)] px-4 py-3.5 text-[var(--brand-primary)]"
+                  role="status" aria-label="L'assistant écrit">
+                  <span></span><span></span><span></span>
+                </p>
               </div>
             }
           </div>
 
-          <!-- Input -->
           @if (error()) {
-            <p class="mx-4 mb-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">{{ error() }}</p>
+            <p role="alert" class="mx-4 mb-2 rounded-lg bg-[var(--error-muted)] px-3 py-2 text-sm text-[var(--error)]">{{ error() }}</p>
           }
           @if (!isVisitorConversation()) {
-          <div class="p-4 border-t border-white/5">
-            <form (ngSubmit)="sendMessage()" class="flex gap-3">
-              <input
-                type="text"
-                [(ngModel)]="messageInput"
-                name="message"
-                class="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-                placeholder="Posez une question comme un client…"
-                [disabled]="sending()"
-              />
-              <button
-                type="submit"
-                [disabled]="sending() || !messageInput.trim()"
-                class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                </svg>
-              </button>
+            <form (ngSubmit)="sendMessage()" class="flex gap-2 border-t border-[var(--border-primary)] p-3 sm:p-4">
+              <label class="sr-only" for="chat-input">Votre question</label>
+              <input id="chat-input" type="text" [(ngModel)]="messageInput" name="message" autocomplete="off"
+                class="field flex-1" placeholder="Bonsoir, vous livrez à Bingerville ?" [disabled]="sending()" />
+              <button type="submit" [disabled]="sending() || !messageInput.trim()" class="btn-primary px-5">Envoyer</button>
             </form>
-          </div>
           }
         } @else {
-          <!-- Empty state -->
-          <div class="flex-1 flex items-center justify-center">
-            <div class="text-center">
-              <div class="w-20 h-20 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
-                <svg class="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                </svg>
-              </div>
-              <h3 class="text-white font-semibold text-lg">Testez votre assistant</h3>
-              <p class="text-slate-400 mt-1">Lancez un test et posez les questions de vos clients : livraison, prix, horaires…</p>
-            </div>
+          <div class="m-auto max-w-sm px-6 text-center">
+            <h2 class="text-xl font-bold">Mettez-vous à la place d'un client</h2>
+            <p class="mt-2 leading-7 text-[var(--text-secondary)]">
+              Lancez un test et posez les questions qu'on vous pose déjà sur WhatsApp. Si une réponse ne vous plaît pas, corrigez le cahier.
+            </p>
           </div>
         }
       </div>
@@ -157,7 +122,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   private readonly conversationsService = inject(ConversationsService);
   private readonly chatService = inject(ChatService);
 
-  @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
+  @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLElement>;
 
   conversations = signal<Conversation[]>([]);
   selectedConversation = signal<Conversation | null>(null);
@@ -167,6 +132,8 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   error = signal('');
   private shouldScrollToBottom = false;
 
+  protected readonly suggestions = ['Vous êtes ouverts le dimanche ?', 'C’est combien la livraison ?', 'Je peux payer avec Wave ?'];
+
   /** ?id=… : conversation ouverte depuis la page Conversations */
   readonly id = input<string>();
 
@@ -174,8 +141,8 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   readonly testConversations = computed(() => this.conversations().filter((c) => c.channel !== 'WIDGET'));
   readonly isVisitorConversation = computed(() => this.selectedConversation()?.channel === 'WIDGET');
 
-  statusLabel(status: Conversation['status']): string {
-    return { ACTIVE: 'Active', RESOLVED: 'Résolue', ARCHIVED: 'Archivée' }[status];
+  protected time(iso: string): string {
+    return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
 
   ngOnInit() {
@@ -201,6 +168,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
 
   selectConversation(conv: Conversation) {
     this.error.set('');
+    this.messages.set([]);
     this.selectedConversation.set(conv);
     this.chatService.getMessages(conv.id).subscribe({
       next: (msgs) => {
@@ -211,7 +179,8 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   }
 
   createConversation() {
-    const title = `Test du ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+    const now = new Date();
+    const title = `Test du ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
     this.conversationsService.create(title).subscribe({
       next: (conv) => {
         this.conversations.update((list) => [conv, ...list]);
@@ -227,6 +196,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
     this.messageInput = '';
     this.error.set('');
     this.sending.set(true);
+    this.shouldScrollToBottom = true;
 
     this.chatService.sendMessage(this.selectedConversation()!.id, content).subscribe({
       next: (res) => {
@@ -242,9 +212,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   }
 
   private scrollToBottom() {
-    if (this.messagesContainer) {
-      const el = this.messagesContainer.nativeElement;
-      el.scrollTop = el.scrollHeight;
-    }
+    const el = this.messagesContainer?.nativeElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }
 }

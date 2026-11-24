@@ -2,77 +2,53 @@ import { Component, signal, inject, input, OnInit, ChangeDetectionStrategy } fro
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
+import { AuthShellComponent } from '../../shared/auth-shell';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, AuthShellComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-teal-950 to-slate-900">
-      <div class="w-full max-w-md p-8 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl">
-        <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-500/20 mb-4">
-            <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-            </svg>
-          </div>
-          <h1 class="text-2xl font-bold text-white">Connexion</h1>
-          <p class="text-slate-400 mt-2">Accédez à l'assistant de votre entreprise</p>
-        </div>
+    <app-auth-shell>
+      <h1 class="text-3xl font-extrabold">Bon retour.</h1>
+      <p class="mt-2 text-[var(--text-secondary)]">Vos clients vous ont peut-être écrit cette nuit.</p>
 
-        @if (error()) {
-          <div class="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-            {{ error() }}
-          </div>
-        }
-
-        <form (ngSubmit)="onSubmit()" class="space-y-5">
-          <div>
-            <label class="block text-sm font-medium text-slate-300 mb-1.5">E-mail</label>
-            <input
-              type="email"
-              [(ngModel)]="email"
-              name="email"
-              class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-              placeholder="vous@entreprise.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-slate-300 mb-1.5">Mot de passe</label>
-            <input
-              type="password"
-              [(ngModel)]="password"
-              name="password"
-              class="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-              placeholder="••••••••"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            [disabled]="loading()"
-            class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {{ loading() ? 'Connexion…' : 'Se connecter' }}
-          </button>
-        </form>
-
-        <div class="mt-5 rounded-xl border border-indigo-500/25 bg-indigo-500/10 p-4 text-sm">
-          <p class="font-semibold text-indigo-200">Vous visitez la démo ?</p>
-          <p class="mt-1 text-slate-400">Entrez dans l'espace de Boutique Adjoua : son assistant, sa base de connaissances et les conversations de ses clients.</p>
-          <button type="button" class="mt-2 font-semibold text-indigo-400 hover:text-indigo-300" (click)="fillDemo()">Utiliser le compte de démonstration</button>
-        </div>
-
-        <p class="mt-6 text-center text-slate-400 text-sm">
-          Pas encore de compte ?
-          <a routerLink="/register" class="text-indigo-400 hover:text-indigo-300 font-medium">Créer mon assistant</a>
+      @if (error()) {
+        <p role="alert" class="mt-6 rounded-lg border border-[var(--error)]/25 bg-[var(--error-muted)] px-3 py-2.5 text-sm text-[var(--error)]">
+          {{ error() }}
         </p>
+      }
+
+      <form (ngSubmit)="onSubmit()" class="mt-8 space-y-5">
+        <label class="block">
+          <span class="mb-1.5 block text-sm font-semibold">E-mail</span>
+          <input type="email" [(ngModel)]="email" name="email" autocomplete="email" class="field" placeholder="adjoua@maboutique.ci" required />
+        </label>
+        <label class="block">
+          <span class="mb-1.5 block text-sm font-semibold">Mot de passe</span>
+          <input type="password" [(ngModel)]="password" name="password" autocomplete="current-password" class="field" required />
+        </label>
+        <button type="submit" [disabled]="loading()" class="btn-primary w-full py-3">
+          {{ loading() ? 'Connexion…' : 'Se connecter' }}
+        </button>
+      </form>
+
+      <div class="mt-8 border-t border-dashed border-[var(--border-secondary)] pt-6">
+        <p class="text-sm font-semibold">Vous visitez la démo ?</p>
+        <p class="mt-1 text-sm leading-6 text-[var(--text-secondary)]">
+          Entrez chez Boutique Adjoua : son cahier, son assistant et les questions de ses clients.
+        </p>
+        <button type="button" class="btn-ghost mt-3 w-full py-2.5 text-sm" [disabled]="loading()" (click)="fillDemo()">
+          Entrer avec le compte de démonstration
+        </button>
       </div>
-    </div>
+
+      <p class="mt-8 text-sm text-[var(--text-secondary)]">
+        Pas encore de compte ?
+        <a routerLink="/register" class="font-semibold text-[var(--brand-primary)] underline-offset-4 hover:underline">Créer mon assistant</a>
+      </p>
+    </app-auth-shell>
   `,
 })
 export class LoginComponent implements OnInit {

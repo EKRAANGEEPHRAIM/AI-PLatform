@@ -15,7 +15,11 @@ export class ThemeService {
       const html = document.documentElement;
       html.classList.remove('light', 'dark');
       html.classList.add(t);
-      localStorage.setItem('theme', t);
+      try {
+        localStorage.setItem('theme', t);
+      } catch {
+        // Stockage bloqué : le choix vaut pour cette visite seulement
+      }
     });
   }
 
@@ -23,9 +27,12 @@ export class ThemeService {
     this._theme.update((t) => (t === 'dark' ? 'light' : 'dark'));
   }
 
+  // Clair par défaut (le « papier » est l'identité d'Akwaba) ; le sombre est un choix explicite
   private getInitialTheme(): Theme {
-    const stored = localStorage.getItem('theme') as Theme | null;
-    if (stored) return stored;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    try {
+      return localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
+    } catch {
+      return 'light';
+    }
   }
 }

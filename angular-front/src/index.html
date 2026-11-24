@@ -1,32 +1,30 @@
 <!doctype html>
-<html lang="fr" class="dark">
+<html lang="fr" class="light">
 <head>
   <meta charset="utf-8">
-  <title>Akwaba — L'assistant qui répond à vos clients 24h/24</title>
-  <meta name="description" content="Un chatbot de service client pour PME : il répond à vos clients sur votre site, jour et nuit, à partir de vos propres informations (prix, horaires, livraison).">
+  <title>Akwaba — votre boutique répond, même quand elle est fermée</title>
+  <meta name="description" content="Un assistant de service client pour les petites entreprises : il répond aux clients sur votre site, jour et nuit, uniquement à partir de ce que vous lui avez écrit (prix, horaires, livraison).">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#0f766e">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1f5135">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="preconnect" href="https://rsms.me/">
-  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script>
-    // Anti-FOUC: apply theme before first paint
-    (function() {
-      const t = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (t === 'light' || (!t && !prefersDark)) {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.classList.add('light');
-      }
+    // Thème appliqué avant le premier affichage. Clair par défaut : le sombre est un choix explicite.
+    (function () {
+      try {
+        if (localStorage.getItem('theme') === 'dark') {
+          document.documentElement.classList.remove('light');
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
     })();
   </script>
 </head>
-<body class="bg-[var(--surface-primary)] text-[var(--text-primary)] antialiased">
+<body>
   <app-root></app-root>
 </body>
 </html>

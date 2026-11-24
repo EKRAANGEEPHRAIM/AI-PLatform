@@ -1,165 +1,122 @@
 import { Component, inject, signal, computed, ChangeDetectionStrategy, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { ConversationsService, type Conversation } from '../../core/services/conversations.service';
+import { whenLabel } from '../../shared/when';
+
+type Filter = 'ALL' | 'WIDGET' | 'ACTIVE' | 'RESOLVED' | 'ARCHIVED';
 
 @Component({
   selector: 'app-conversations',
   standalone: true,
+  imports: [RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="p-8">
-      <!-- Header -->
-      <div class="flex items-center justify-between mb-8">
+    <div class="mx-auto max-w-5xl px-4 py-8 sm:px-8 sm:py-10">
+      <div class="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-bold text-white">Conversations</h1>
-          <p class="text-slate-400 mt-1">Les questions posées par les visiteurs de votre site, et vos propres tests</p>
+          <h1 class="text-3xl font-extrabold">Questions des clients</h1>
+          <p class="mt-1 text-[var(--text-secondary)]">Tout ce qu'on a demandé à votre assistant, sur votre site et pendant vos tests.</p>
         </div>
-        <button
-          (click)="newTest()"
-          class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm transition flex items-center gap-2"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Tester l'assistant
-        </button>
+        <a routerLink="/chat" class="btn-primary px-4 py-2.5 text-sm">Tester l'assistant</a>
       </div>
 
-      <!-- Filters -->
-      <div class="flex gap-2 mb-6">
+      <div class="mt-8 flex gap-1 overflow-x-auto border-b [scrollbar-width:none] border-[var(--border-primary)]" role="tablist" aria-label="Filtrer les conversations">
         @for (filter of filters; track filter.value) {
-          <button
-            (click)="activeFilter.set(filter.value)"
+          <button type="button" role="tab" [attr.aria-selected]="activeFilter() === filter.value" (click)="activeFilter.set(filter.value)"
+            class="-mb-px shrink-0 border-b-2 px-3 py-2.5 text-sm font-semibold transition"
             [class]="activeFilter() === filter.value
-              ? 'px-4 py-2 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-sm font-medium'
-              : 'px-4 py-2 rounded-lg bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 text-sm font-medium transition'"
-          >
+              ? 'border-[var(--accent)] text-[var(--text-primary)]'
+              : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'">
             {{ filter.label }}
+            <span class="ml-1 font-mono text-xs font-normal text-[var(--text-tertiary)]">{{ countFor(filter.value) }}</span>
           </button>
         }
       </div>
 
-      <!-- Table -->
-      <div class="rounded-2xl border border-white/10 overflow-hidden">
-        <table class="w-full">
-          <thead>
-            <tr class="bg-white/5">
-              <th class="text-left px-6 py-4 text-sm font-medium text-slate-400">Titre</th>
-              <th class="text-left px-6 py-4 text-sm font-medium text-slate-400">Origine</th>
-              <th class="text-left px-6 py-4 text-sm font-medium text-slate-400">Statut</th>
-              <th class="text-left px-6 py-4 text-sm font-medium text-slate-400">Messages</th>
-              <th class="text-left px-6 py-4 text-sm font-medium text-slate-400">Créée le</th>
-              <th class="text-right px-6 py-4 text-sm font-medium text-slate-400">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (conv of filteredConversations(); track conv.id) {
-              <tr class="border-t border-white/5 hover:bg-white/[0.02] transition">
-                <td class="px-6 py-4">
-                  <p class="text-white text-sm font-medium">{{ conv.title }}</p>
-                </td>
-                <td class="px-6 py-4">
-                  @if (conv.channel === 'WIDGET') {
-                    <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-orange-500/10 text-orange-300 border border-orange-500/20">Site web</span>
-                  } @else {
-                    <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-white/5 text-slate-400 border border-white/10">Test</span>
-                  }
-                </td>
-                <td class="px-6 py-4">
-                  <span
-                    [class]="conv.status === 'ACTIVE'
-                      ? 'px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                      : conv.status === 'RESOLVED'
-                        ? 'px-2.5 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400 border border-violet-500/20'
-                        : 'px-2.5 py-1 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20'"
-                  >
-                    {{ statusLabels[conv.status] }}
-                  </span>
-                </td>
-                <td class="px-6 py-4 text-slate-400 text-sm">
-                  {{ conv._count?.messages || 0 }}
-                </td>
-                <td class="px-6 py-4 text-slate-400 text-sm">
-                  {{ formatDate(conv.createdAt) }}
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex items-center justify-end gap-2">
-                    <button
-                      (click)="openChat(conv)"
-                      class="p-2 rounded-lg hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-400 transition"
-                      [title]="conv.channel === 'WIDGET' ? 'Lire la conversation' : 'Ouvrir le test'"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                      </svg>
-                    </button>
-                    @if (conv.status === 'ACTIVE') {
-                      <button
-                        (click)="resolve(conv)"
-                        class="p-2 rounded-lg hover:bg-emerald-500/10 text-slate-400 hover:text-emerald-400 transition"
-                        title="Marquer comme résolue"
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                      </button>
-                    }
-                    <button
-                      (click)="archive(conv)"
-                      class="p-2 rounded-lg hover:bg-amber-500/10 text-slate-400 hover:text-amber-400 transition"
-                      title="Archiver"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-                      </svg>
-                    </button>
-                    <button
-                      (click)="deleteConv(conv)"
-                      class="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition"
-                      title="Supprimer"
-                    >
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="6" class="px-6 py-12 text-center text-slate-500">
-                  Aucune conversation. Installez le widget sur votre site ou testez votre assistant.
-                </td>
-              </tr>
+      <ul class="divide-y divide-[var(--border-primary)]">
+        @for (conv of filteredConversations(); track conv.id) {
+          <li class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center">
+            <a [routerLink]="['/chat']" [queryParams]="{ id: conv.id }" class="group min-w-0 flex-1">
+              <span class="block truncate font-medium group-hover:underline">
+                {{ conv.channel === 'WIDGET' ? '« ' + conv.title + ' »' : conv.title }}
+              </span>
+              <span class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--text-tertiary)]">
+                @if (conv.channel === 'WIDGET') {
+                  <span class="pill bg-[var(--accent-muted)] text-[var(--accent)]">Visiteur du site</span>
+                } @else {
+                  <span class="pill bg-[var(--surface-tertiary)] text-[var(--text-secondary)]">Votre test</span>
+                }
+                <span>{{ when(conv.createdAt) }}</span>
+                <span>{{ conv._count?.messages ?? 0 }} messages</span>
+                <span [style.color]="conv.status === 'ACTIVE' ? 'var(--accent)' : null">{{ statusLabels[conv.status] }}</span>
+              </span>
+            </a>
+
+            <div class="flex shrink-0 items-center gap-1">
+              @if (conv.status === 'ACTIVE') {
+                <button type="button" (click)="resolve(conv)" class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-[var(--brand-primary)] hover:bg-[var(--brand-primary-muted)]">
+                  Marquer relue
+                </button>
+              }
+              @if (conv.status !== 'ARCHIVED') {
+                <button type="button" (click)="archive(conv)" class="rounded-md px-2.5 py-1.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]">
+                  Archiver
+                </button>
+              }
+              <button type="button" (click)="deleteConv(conv)" [attr.aria-label]="'Supprimer la conversation ' + conv.title"
+                class="rounded-md p-1.5 text-[var(--text-tertiary)] hover:bg-[var(--error-muted)] hover:text-[var(--error)]" title="Supprimer">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                </svg>
+              </button>
+            </div>
+          </li>
+        } @empty {
+          <li class="py-14 text-center text-[var(--text-secondary)]">
+            @if (loaded()) {
+              Rien ici pour l'instant. Installez le widget sur votre site, ou testez votre assistant.
+            } @else {
+              Chargement…
             }
-          </tbody>
-        </table>
-      </div>
+          </li>
+        }
+      </ul>
     </div>
   `,
 })
 export class ConversationsComponent implements OnInit {
   private readonly conversationsService = inject(ConversationsService);
-  private readonly router = inject(Router);
 
-  conversations = signal<Conversation[]>([]);
-  activeFilter = signal<string>('ALL');
+  protected readonly conversations = signal<Conversation[]>([]);
+  protected readonly loaded = signal(false);
+  protected readonly activeFilter = signal<Filter>('ALL');
 
-  filters = [
+  protected readonly filters: { label: string; value: Filter }[] = [
     { label: 'Toutes', value: 'ALL' },
-    { label: 'Site web', value: 'WIDGET' },
-    { label: 'Actives', value: 'ACTIVE' },
-    { label: 'Résolues', value: 'RESOLVED' },
+    { label: 'Du site', value: 'WIDGET' },
+    { label: 'À relire', value: 'ACTIVE' },
+    { label: 'Relues', value: 'RESOLVED' },
     { label: 'Archivées', value: 'ARCHIVED' },
   ];
 
-  filteredConversations = computed(() => {
-    const filter = this.activeFilter();
+  protected readonly statusLabels: Record<Conversation['status'], string> = { ACTIVE: 'À relire', RESOLVED: 'Relue', ARCHIVED: 'Archivée' };
+
+  protected readonly filteredConversations = computed(() => this.applyFilter(this.activeFilter()));
+
+  private applyFilter(filter: Filter): Conversation[] {
     const convs = this.conversations();
     if (filter === 'ALL') return convs;
     if (filter === 'WIDGET') return convs.filter((c) => c.channel === 'WIDGET');
     return convs.filter((c) => c.status === filter);
-  });
+  }
+
+  protected countFor(filter: Filter): number {
+    return this.applyFilter(filter).length;
+  }
+
+  protected when(iso: string): string {
+    return whenLabel(iso);
+  }
 
   ngOnInit() {
     this.loadConversations();
@@ -167,18 +124,12 @@ export class ConversationsComponent implements OnInit {
 
   private loadConversations() {
     this.conversationsService.getAll().subscribe({
-      next: (data) => this.conversations.set(data),
+      next: (data) => {
+        this.conversations.set([...data].sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+        this.loaded.set(true);
+      },
+      error: () => this.loaded.set(true),
     });
-  }
-
-  readonly statusLabels: Record<Conversation['status'], string> = { ACTIVE: 'Active', RESOLVED: 'Résolue', ARCHIVED: 'Archivée' };
-
-  newTest() {
-    this.router.navigate(['/chat']);
-  }
-
-  openChat(conv: Conversation) {
-    this.router.navigate(['/chat'], { queryParams: { id: conv.id } });
   }
 
   resolve(conv: Conversation) {
@@ -199,13 +150,5 @@ export class ConversationsComponent implements OnInit {
         next: () => this.loadConversations(),
       });
     }
-  }
-
-  formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('fr-FR', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   }
 }
