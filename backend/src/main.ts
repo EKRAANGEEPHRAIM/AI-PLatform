@@ -22,7 +22,9 @@ async function bootstrap() {
 
   // Le site (et son widget, servi par le même site) est le seul appelant autorisé
   app.enableCors({
-    origin: process.env.FRONTEND_URL ?? 'http://localhost:4200',
+    // trim + sans "/" final : un espace ou retour à la ligne collé dans Render
+    // rendrait l'en-tête CORS invalide et ferait échouer toutes les requêtes
+    origin: (process.env.FRONTEND_URL ?? 'http://localhost:4200').trim().replace(/\/+$/, ''),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
