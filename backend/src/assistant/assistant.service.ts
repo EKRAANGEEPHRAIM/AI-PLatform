@@ -34,10 +34,12 @@ export class AssistantService {
     // DEEPSEEK_API_KEY seule (anciennes installations) : on garde DeepSeek, pas Groq
     const legacyDeepseek = !groqKey && !!config.get<string>('DEEPSEEK_API_KEY')?.trim();
     this.apiKey = (groqKey || config.get<string>('DEEPSEEK_API_KEY') || '').trim();
+    // Variable vide (champ laissé blanc sur Render) = non renseignée
     this.apiUrl =
-      config.get<string>('AI_API_URL') ??
+      config.get<string>('AI_API_URL')?.trim() ||
       (legacyDeepseek ? 'https://api.deepseek.com/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions');
-    this.model = config.get<string>('AI_MODEL') ?? (legacyDeepseek ? 'deepseek-chat' : 'llama-3.3-70b-versatile');
+    this.model =
+      config.get<string>('AI_MODEL')?.trim() || (legacyDeepseek ? 'deepseek-chat' : 'llama-3.3-70b-versatile');
   }
 
   get isConfigured(): boolean {
