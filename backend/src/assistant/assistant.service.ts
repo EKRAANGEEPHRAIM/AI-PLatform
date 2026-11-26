@@ -40,6 +40,15 @@ export class AssistantService {
       (legacyDeepseek ? 'https://api.deepseek.com/chat/completions' : 'https://api.groq.com/openai/v1/chat/completions');
     this.model =
       config.get<string>('AI_MODEL')?.trim() || (legacyDeepseek ? 'deepseek-chat' : 'llama-3.3-70b-versatile');
+
+    // Visible dès le démarrage dans les journaux Render (jamais la clé, seulement sa présence)
+    let host = this.apiUrl;
+    try {
+      host = new URL(this.apiUrl).host;
+    } catch {
+      // adresse invalide : on l'affiche telle quelle pour la repérer
+    }
+    this.logger.log(`IA : ${host} · modèle ${this.model} · clé ${this.apiKey ? 'présente' : 'ABSENTE'}`);
   }
 
   get isConfigured(): boolean {
@@ -86,7 +95,11 @@ export class AssistantService {
 
     if (!response.ok) {
       this.logger.error(`AI API error ${response.status}: ${await response.text()}`);
-      throw new ServiceUnavailableException("L'assistant est momentanément indisponible. Réessayez dans un instant.");
+      // Le code du fournisseur (401 clé refusée, 404 modèle inconnu, 429 quota…) aide au diagnostic
+      // sans rien révéler de la configuration
+      throw new ServiceUnavailableException(
+        `L'assistant est momentanément indisponible. Réessayez dans un instant. (code ${response.status})`,
+      );
     }
 
     const data = (await response.json()) as ChatCompletionResponse;
