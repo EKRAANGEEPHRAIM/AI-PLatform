@@ -4,8 +4,10 @@ Akwaba installe sur le site d'une PME (boutique, restaurant, clinique, école) u
 connaît **ses** prix, horaires, conditions de livraison et moyens de paiement. Il répond en français, à toute heure,
 et donne le WhatsApp ou le téléphone de l'entreprise quand il ne connaît pas la réponse.
 
+**Application :** https://ai-p-latform-o77d.vercel.app · **Portfolio :** https://portfolio-ange-ekra.vercel.app
+
 > Projet de démonstration développé par Ange Ephraïm Ekra : Angular 22, NestJS 11, PostgreSQL (Neon), Prisma 7,
-> IA via Groq (Llama 3.3).
+> IA par n'importe quel fournisseur compatible OpenAI (Gemini en production, Groq par défaut).
 
 ## Ce que fait l'application
 
@@ -22,8 +24,8 @@ le coût de l'IA. Chaque entreprise ne voit que ses propres conversations.
 
 ## Démo
 
-- **Site de démonstration** : `/demo`, la boutique fictive *Boutique Adjoua* (pagnes wax, Abidjan) avec son assistante.
-- **Espace entreprise** : `/login?demo=1` se connecte avec le compte de démonstration
+- **Site de démonstration** : [/demo](https://ai-p-latform-o77d.vercel.app/demo), la boutique fictive *Boutique Adjoua* (pagnes wax, Abidjan) avec son assistante.
+- **Espace entreprise** : [/login?demo=1](https://ai-p-latform-o77d.vercel.app/login?demo=1) se connecte avec le compte de démonstration
   (`demo@akwaba.app` / `Demo2026!`, données fictives créées par le seed).
 
 ## Lancer en local
