@@ -219,7 +219,15 @@ interface Exchange {
       <footer class="border-t border-[var(--border-primary)]">
         <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-[var(--text-tertiary)] sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <app-brand [size]="22" />
-          <p>Conçu et développé en Côte d'Ivoire par Ange Ephraïm Ekra · Angular, NestJS, PostgreSQL</p>
+          <!-- Signature commune aux projets du portfolio : monogramme AE + lien vers le portfolio -->
+          <p class="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <a href="https://portfolio-ange-ekra.vercel.app" target="_blank" rel="noopener"
+              class="inline-flex items-center gap-2 font-semibold text-[var(--text-secondary)] underline-offset-4 hover:underline">
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" rx="6" fill="#121110"/><path fill="#E0A526" fill-rule="evenodd" d="M6 36 L14 9 H18.6 L26.6 36 H21.9 L20.2 30 H12.4 L10.7 36 Z M13.5 26 H19.1 L16.3 16 Z"/><rect x="28.5" y="9" width="4.2" height="27" fill="#F4EDE0"/><rect x="28.5" y="9" width="13.5" height="4.2" fill="#F4EDE0"/><rect x="28.5" y="20.4" width="10.5" height="4.2" fill="#C4502F"/><rect x="28.5" y="31.8" width="13.5" height="4.2" fill="#F4EDE0"/><rect x="6" y="40" width="9" height="3" fill="#E0A526"/><rect x="15" y="40" width="9" height="3" fill="#2E7D4A"/><rect x="24" y="40" width="9" height="3" fill="#C4502F"/><rect x="33" y="40" width="9" height="3" fill="#F4EDE0"/></svg>
+              <span>Conçu et développé par Ange Ephraïm Ekra</span>
+            </a>
+            <span>· Angular, NestJS, PostgreSQL</span>
+          </p>
         </div>
       </footer>
     </div>
